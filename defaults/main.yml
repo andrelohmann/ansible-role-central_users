@@ -1,0 +1,7 @@
+---
+central_users: []
+machine_users: []
+central_users_var_file: false
+central_users_sudoers_group_name: wheel
+central_users_sudoers_group_permission: 'ALL=(ALL) NOPASSWD: ALL'
+...

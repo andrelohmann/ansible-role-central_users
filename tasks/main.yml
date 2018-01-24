@@ -1,0 +1,135 @@
+---
+
+- name: load central_users from var file
+  include_vars:
+    file: "{{ central_users_var_file }}"
+  when: central_users_var_file is defined and central_users_var_file != false
+
+- name: crete temporary variales
+  set_fact:
+    _users_list: []
+    _users: {}
+    _remove_users: {}
+    _users_name: {}
+    _users_groups: {}
+    _users_sudo: {}
+
+- name: transform machine_users dictionary to list with users
+  set_fact:
+    _users_list: "{{ _users_list }} + ['{{ item.key }}']"
+  with_dict: "{{ machine_users }}"
+
+- name: build new users dictionary
+  set_fact:
+    _users: "{{_users |combine({item.key: item.value})}}"
+  when: "item.key in _users_list or item.value.state == 'absent'"
+  with_dict: "{{ central_users }}"
+
+- name: build remove users dictionary
+  set_fact:
+    _remove_users: "{{_remove_users |combine({item.key: {'state': 'absent'}})}}"
+  when: "item.value.state == 'absent'"
+  with_dict: "{{ machine_users }}"
+
+- name: combine _users and _remove_users dictionaries
+  set_fact:
+    _users: "{{_users|combine(_remove_users, recursive=True)}}"
+
+- name: add name attribute
+  set_fact:
+    _users_name: "{{_users_name |combine({item.key: {'name': item.key}})}}"
+  with_dict: "{{ _users }}"
+
+- name: combine _users and _users_name dictionaries
+  set_fact:
+    _users: "{{_users|combine(_users_name, recursive=True)}}"
+
+- name: add groups attribute
+  set_fact:
+    _users_groups: "{{_users_groups |combine({item.key: {'groups': item.value.groups}})}}"
+  when: item.value.groups is defined
+  with_dict: "{{ machine_users }}"
+
+- name: combine _users and _users_groups dictionaries
+  set_fact:
+    _users: "{{_users|combine(_users_groups, recursive=True)}}"
+
+- name: add groups attribute
+  set_fact:
+    _users_sudo: "{{_users_sudo |combine({item.key: {'groups': [central_users_sudoers_group_name]+item.value.groups}})}}"
+  when: item.value.sudo is defined and item.value.sudo == true
+  with_dict: "{{ machine_users }}"
+
+- name: combine _users and _users_sudo dictionaries
+  set_fact:
+    _users: "{{_users|combine(_users_sudo, recursive=True)}}"
+
+- name: add sudoers group
+  group:
+    name: "{{ central_users_sudoers_group_name }}"
+    state: present
+  when: central_users_sudoers_group_name is defined
+
+- name: add sudoers group permissions
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: "^%{{ central_users_sudoers_group_name }}"
+    line: "%{{ central_users_sudoers_group_name }} {{ central_users_sudoers_group_permission }}"
+    validate: 'visudo -cf %s'
+
+- name: create groups
+  group:
+    name: "{{item.1}}"
+  with_subelements:
+  - "{{ _users }}"
+  - groups
+  - {skip_missing: true}
+
+- name: create all users
+  user:
+    comment: "{{item.value.comment|default(omit)}}"
+    createhome: "{{item.value.reatehome|default(omit)}}"
+    expires: "{{item.value.expires|default(omit)}}"
+    force: "{{item.value.force|default(omit)}}"
+    generate_ssh_key: "{{item.value.generate_ssh_key|default(omit)}}"
+    group: "{{item.value.group|default(omit)}}"
+    groups: "{{item.value.groups|default(omit)}}"
+    home: "{{item.value.home|default(omit)}}"
+    login_class: "{{item.value.login_class|default(omit)}}"
+    move_home: "{{item.value.move_home|default(omit)}}"
+    name: "{{item.value.name|default(omit)}}"
+    non_unique: "{{item.value.non_unique|default(omit)}}"
+    password: "{{item.value.password|default(omit)}}"
+    remove: "{{item.value.remove|default(omit)}}"
+    seuser: "{{item.value.seuser|default(omit)}}"
+    shell: "{{item.value.shell|default(omit)}}"
+    skeleton: "{{item.value.skeleton|default(omit)}}"
+    ssh_key_bits: "{{item.value.ssh_key_bits|default(omit)}}"
+    ssh_key_comment: "{{item.value.ssh_key_comment|default(omit)}}"
+    ssh_key_file: "{{item.value.ssh_key_file|default(omit)}}"
+    ssh_key_passphrase: "{{item.value.ssh_key_passphrase|default(omit)}}"
+    ssh_key_type: "{{item.value.ssh_key_type|default(omit)}}"
+    state: "{{item.value.state|default(omit)}}"
+    system: "{{item.value.system|default(omit)}}"
+    uid: "{{item.value.uid|default(omit)}}"
+    update_password: "{{item.value.update_password|default(omit)}}"
+  with_dict: "{{ _users }}"
+
+- name: create keys
+  authorized_key:
+    user: "{{item.0.name}}"
+    key: "{{item.1.key}}"
+    exclusive: "{{item.1.exclusive|default(omit)}}"
+    key_options: "{{item.1.key_options|default(omit)}}"
+    manage_dir: "{{item.1.manage_dir|default(omit)}}"
+    path: "{{item.1.path|default(omit)}}"
+    state: "{{item.1.state|default(omit)}}"
+    validate_certs: "{{item.1.validate_certs|default(omit)}}"
+  when:
+  with_subelements:
+  - "{{ _users }}"
+  - keys
+  - {skip_missing: true}
+
+...

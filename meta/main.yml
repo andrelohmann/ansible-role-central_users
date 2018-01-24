@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  author: andrelohmann
+  description: ansible galaxy role to deploy a central managed list of users and public keys
+  company: smartformer UG
+
+  license: MIT
+
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: Ubuntu
+      versions:
+      - trusty
+      - xenial
+    - name: Debian
+      versions:
+      - jessie
+      - stretch
+    - name: EL
+      versions:
+      - all
+
+  galaxy_tags:
+  - account
+  - user
+  - public
+  - key
+
+dependencies: []
+...

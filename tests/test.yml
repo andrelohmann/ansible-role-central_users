@@ -1,0 +1,34 @@
+---
+- hosts: localhost
+  become: true
+  become_method: sudo
+  vars:
+    groups:
+      myusers:
+        state: 'present'
+        sudo: true
+
+    central_users:
+      test_user:
+        uid: 4001
+        state: present
+        keys:
+        - key: ssh-rsa AAA...
+          state: present
+    machine_users:
+      test_user:
+        sudo: true
+        state: present
+        groups:
+        - myusers
+
+  pretasks:
+
+  - name: add myusers group
+    group:
+      name: myusers
+      state: present
+
+  roles:
+    - ansible-role-central_users
+...
