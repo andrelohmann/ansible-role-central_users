@@ -22,13 +22,6 @@
         groups:
         - myusers
 
-  pretasks:
-
-  - name: add myusers group
-    group:
-      name: myusers
-      state: present
-
   roles:
     - ansible-role-central_users
 ...
