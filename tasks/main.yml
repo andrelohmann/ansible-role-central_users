@@ -5,7 +5,7 @@
     file: "{{ central_users_var_file }}"
   when: central_users_var_file is defined and central_users_var_file != false
 
-- name: crete temporary variales
+- name: create temporary variales
   set_fact:
     _users_list: []
     _users: {}
@@ -57,7 +57,13 @@
 - name: add groups attribute
   set_fact:
     _users_sudo: "{{_users_sudo |combine({item.key: {'groups': [central_users_sudoers_group_name]+item.value.groups}})}}"
-  when: item.value.sudo is defined and item.value.sudo == true
+  when: item.value.sudo is defined and item.value.sudo == true and item.value.groups is defined
+  with_dict: "{{ machine_users }}"
+
+- name: add groups attribute
+  set_fact:
+    _users_sudo: "{{_users_sudo |combine({item.key: {'groups': [central_users_sudoers_group_name]}})}}"
+  when: item.value.sudo is defined and item.value.sudo == true and item.value.groups is not defined
   with_dict: "{{ machine_users }}"
 
 - name: combine _users and _users_sudo dictionaries
