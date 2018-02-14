@@ -132,10 +132,10 @@
     path: "{{item.1.path|default(omit)}}"
     state: "{{item.1.state|default(omit)}}"
     validate_certs: "{{item.1.validate_certs|default(omit)}}"
-  when:
+  when: item.0.state == 'present'
   with_subelements:
   - "{{ _users }}"
-  - keys
+  - public_keys
   - {skip_missing: true}
 
 ...
