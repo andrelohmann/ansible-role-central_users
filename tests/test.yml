@@ -12,7 +12,7 @@
       test_user:
         uid: 4001
         state: present
-        keys:
+        public_keys:
         - key: ssh-rsa AAA...
           state: present
     machine_users:
